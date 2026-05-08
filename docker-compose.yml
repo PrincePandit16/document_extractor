@@ -33,6 +33,12 @@ services:
       - ./uploads:/app/uploads
       - ./logs:/app/logs
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:                                         # ← ADD THIS
+    test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+  
 
   ui:
     build: .
@@ -43,7 +49,8 @@ services:
     environment:
       - API_BASE_URL=http://api:8000/api/v1
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     command: streamlit run streamlit_app.py --server.port 8501 --server.address 0.0.0.0
 
 volumes:
