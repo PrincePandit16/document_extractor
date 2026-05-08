@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      # These match the exact username, password, and DB name you put in your .env
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: doc_extractor
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d doc_extractor"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env  # Automatically loads all your Groq, OCR, and App variables!
+    environment:
+      # OVERRIDE: Your .env says 'localhost', but Docker needs 'postgres'
+      # We override it here so it works flawlessly inside Docker without you changing your .env file.
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/doc_extractor
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./uploads:/app/uploads:delegated
+      - ./logs:/app/logs:delegated
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  ui:
+    build: .
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env  # Pulls in APP_NAME, APP_VERSION, etc.
+    environment:
+      - API_BASE_URL=http://api:8000/api/v1
+    depends_on:
+      - api
+    command: streamlit run streamlit_app.py --server.port 8501 --server.address 0.0.0.0
+
+volumes:
+  pgdata:
