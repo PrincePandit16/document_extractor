@@ -2,7 +2,6 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      # These match the exact username, password, and DB name you put in your .env
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: doc_extractor
@@ -21,10 +20,8 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - .env  # Automatically loads all your Groq, OCR, and App variables!
+      - .env
     environment:
-      # OVERRIDE: Your .env says 'localhost', but Docker needs 'postgres'
-      # We override it here so it works flawlessly inside Docker without you changing your .env file.
       - DATABASE_URL=postgresql://postgres:password@postgres:5432/doc_extractor
     depends_on:
       postgres:
@@ -33,19 +30,18 @@ services:
       - ./uploads:/app/uploads
       - ./logs:/app/logs
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-    healthcheck:                                         # ← ADD THIS
-    test: ["CMD", "curl", "-f", "http://localhost:8000/"]
-    interval: 10s
-    timeout: 5s
-    retries: 5
-  
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   ui:
     build: .
     ports:
       - "8501:8501"
     env_file:
-      - .env  # Pulls in APP_NAME, APP_VERSION, etc.
+      - .env
     environment:
       - API_BASE_URL=http://api:8000/api/v1
     depends_on:
