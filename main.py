@@ -10,6 +10,8 @@ from app.api.routes import router
 from app.db.database import init_db
 from app.utils.logging import setup_logging
 
+
+setup_logging()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
@@ -21,8 +23,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-# Setup logging first
-setup_logging()
+
 
 app = FastAPI(
     title=settings.APP_NAME,
